@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Aim Trainer</title>
+<style>
+:root{--bg:#f4f5f7;--card:#ffffff;--text:#14161a;--muted:#667080;--accent:#e5484d;--line:#d9dce1;--chip:#eceef2;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#101216;--card:#1a1d23;--text:#eceef1;--muted:#98a0ac;--accent:#ff5a5f;--line:#2b2f37;--chip:#252932;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101216;--card:#1a1d23;--text:#eceef1;--muted:#98a0ac;--accent:#ff5a5f;--line:#2b2f37;--chip:#252932;color-scheme:dark}
+html,body{height:100%;margin:0}
+body{overscroll-behavior:none;-webkit-touch-callout:none;background:var(--bg);color:var(--text);font-family:"Noto Sans Myanmar","Myanmar Text",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+.center{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:100%;max-width:440px;box-sizing:border-box}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.5}
+label.l{display:block;font-size:14px;margin:14px 0 6px;color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+input[type=number]{width:84px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;text-align:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{border:0;background:var(--chip);color:var(--text);padding:7px 13px;border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit}
+.chip.on{background:var(--accent);color:#fff}
+.tg{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:14px}
+.tg label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.tg input{accent-color:var(--accent)}
+.btn{border:0;background:var(--accent);color:#fff;font-size:17px;padding:13px;border-radius:12px;width:100%;margin-top:20px;cursor:pointer;font-family:inherit}
+.btn.alt{background:var(--chip);color:var(--text);margin-top:10px}
+#game{height:100%;display:flex;flex-direction:column}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;font-size:14px;font-variant-numeric:tabular-nums}
+.hud button{border:0;background:var(--chip);color:var(--text);border-radius:8px;padding:6px 12px;font-family:inherit;cursor:pointer}
+#arena{flex:1;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--card);border-top:1px solid var(--line);cursor:crosshair}
+.target{position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,#fff 0 16%,var(--accent) 17% 42%,#fff 43% 60%,var(--accent) 61%);box-shadow:0 0 0 2px var(--accent)}
+.ring{position:absolute;border-radius:50%;border:3px solid var(--accent);transform:translate(-50%,-50%);pointer-events:none;animation:rg .35s ease-out forwards}
+@keyframes rg{from{width:10px;height:10px;opacity:1}to{width:96px;height:96px;opacity:0}}
+.pop{position:absolute;pointer-events:none;font-weight:700;font-size:14px;color:var(--accent);transform:translate(-50%,-30px);animation:pp .6s ease-out forwards}
+@keyframes pp{to{opacity:0;margin-top:-26px}}
+#hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--muted);font-size:14px;pointer-events:none}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px}
+.stat{background:var(--bg);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.badge{color:var(--accent);font-weight:700;margin:8px 0 0}
+.hr{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:7px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.hr b{min-width:64px;text-align:right}
+.rng{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div id="menu" class="center">
+  <div class="card">
+    <h1>🎯 Aim Trainer</h1>
+    <p class="sub" id="mdesc"></p>
+    <div class="chips" id="modes"></div>
+
+    <div id="rowCount">
+      <label class="l" for="cnt">Target အရေအတွက် (၁၀ မှ ၁၀၀၀)</label>
+      <div class="row"><input type="range" id="cntR" min="10" max="1000"><input type="number" id="cnt" min="10" max="1000"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div id="rowSecs">
+      <label class="l" for="secs">ကစားချိန် (စက္ကန့် ၁၀–၁၂၀)</label>
+      <div class="row"><input type="range" id="secsR" min="10" max="120"><input type="number" id="secs" min="10" max="120"></div>
+    </div>
+
+    <label class="l" for="size">Target အရွယ်အစား (px)</label>
+    <div class="row"><input type="range" id="sizeR" min="20" max="120" step="2"><input type="number" id="size" min="20" max="120"></div>
+
+    <div class="tg">
+      <label><input type="checkbox" id="moving"> ရွှေ့နေတဲ့ target</label>
+      <label><input type="checkbox" id="sound"> အသံ</label>
+      <label><input type="checkbox" id="vib"> တုန်ခါမှု</label>
+    </div>
+    <button class="btn" id="startBtn">စတင်မယ်</button>
+    <button class="btn alt" id="histBtn">📈 History</button>
+  </div>
+</div>
+
+<div id="game" hidden>
+  <div class="hud">
+    <span id="h1"></span><span id="h2"></span><span id="h3"></span>
+    <button id="quit">ထွက်မယ်</button>
+  </div>
+  <div id="arena"><div id="hint">ပထမ target ကို နှိပ်ပြီး စတင်ပါ</div></div>
+</div>
+
+<div id="result" class="center" hidden>
+  <div class="card">
+    <h1>ရလဒ်</h1>
+    <p class="sub" id="rSub"></p>
+    <div class="stats" id="rStats"></div>
+    <p class="badge" id="rBest"></p>
+    <div id="rChart"></div>
+    <button class="btn" id="again">ထပ်ကစားမယ်</button>
+    <button class="btn alt" id="toMenu">ဆက်တင်ပြောင်းမယ်</button>
+  </div>
+</div>
+
+<div id="hist" class="center" hidden>
+  <div class="card">
+    <h1>📈 History</h1>
+    <div class="chips" id="hModes"></div>
+    <p class="sub" id="hNote" style="margin-top:12px"></p>
+    <div id="hChart"></div>
+    <div id="hList" style="margin-top:12px"></div>
+    <button class="btn alt" id="hClear">History ဖျက်မယ်</button>
+    <button class="btn" id="hBack">ပြန်သွားမယ်</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cl = (v, a, b, d) => { v = parseInt(v, 10); if(isNaN(v)) v = d; return Math.min(b, Math.max(a, v)); };
+function load(){ try{ return JSON.parse(localStorage.getItem('aim2') || '{}'); }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem('aim2', JSON.stringify(S)); }catch(e){} }
+const S = Object.assign({mode:'classic', count:30, secs:30, size:60, moving:false, sound:true, vib:true}, load());
+const MODES = [
+  ['classic', 'Classic', 'သတ်မှတ်ထားတဲ့ target အရေအတွက်ကို အမြန်ဆုံး ပြီးအောင် နှိပ်ပါ။ ပထမ target ကို နှိပ်မှ အချိန်စပါတယ်။'],
+  ['timed', 'အချိန်ကန့်သတ်', 'သတ်မှတ်စက္ကန့်အတွင်း အများဆုံး ထိမှန်အောင် နှိပ်ပါ။ Combo တက်ရင် Score များပါတယ်။'],
+  ['survival', 'အသက်ရှင်ကျန်', 'အသက် ၃ ချောင်း။ Target မပျောက်ခင် မနှိပ်နိုင်ရင် (သို့) မှားနှိပ်ရင် အသက်ဆုံးပါမယ်။ ဆက်နှိပ်လေ မြန်လေ ဖြစ်ပါမယ်။']
+];
+
+function sync(){
+  $('cnt').value = $('cntR').value = S.count;
+  $('secs').value = $('secsR').value = S.secs;
+  $('size').value = $('sizeR').value = S.size;
+  $('moving').checked = S.moving; $('sound').checked = S.sound; $('vib').checked = S.vib;
+  $('rowCount').hidden = S.mode !== 'classic';
+  $('rowSecs').hidden = S.mode !== 'timed';
+  $('mdesc').textContent = MODES.find(m => m[0] === S.mode)[2];
+  document.querySelectorAll('#modes .chip').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
+  save();
+}
+MODES.forEach(m => { const b = document.createElement('button'); b.className = 'chip'; b.dataset.m = m[0]; b.textContent = m[1]; b.onclick = () => { S.mode = m[0]; sync(); }; $('modes').appendChild(b); });
+[10, 30, 100, 300, 500, 1000].forEach(n => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = n; b.onclick = () => { S.count = n; sync(); }; $('chips').appendChild(b); });
+$('cntR').oninput = () => { S.count = cl($('cntR').value, 10, 1000, 30); sync(); };
+$('cnt').onchange = () => { S.count = cl($('cnt').value, 10, 1000, 30); sync(); };
+$('secsR').oninput = () => { S.secs = cl($('secsR').value, 10, 120, 30); sync(); };
+$('secs').onchange = () => { S.secs = cl($('secs').value, 10, 120, 30); sync(); };
+$('sizeR').oninput = () => { S.size = cl($('sizeR').value, 20, 120, 60); sync(); };
+$('size').onchange = () => { S.size = cl($('size').value, 20, 120, 60); sync(); };
+['moving', 'sound', 'vib'].forEach(k => $(k).onchange = () => { S[k] = $(k).checked; sync(); });
+sync();
+
+let ac;
+function beep(f, d){
+  if(!S.sound) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = f; g.gain.value = 0.07;
+    o.connect(g); g.connect(ac.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + d); o.stop(ac.currentTime + d);
+  }catch(e){}
+}
+function buzz(ms){ if(S.vib && navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+
+function fmt(ms){
+  const s = ms / 1000;
+  if(s < 60) return s.toFixed(2) + ' s';
+  const m = Math.floor(s / 60);
+  return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0');
+}
+function show(w){ $('menu').hidden = w !== 'menu'; $('game').hidden = w !== 'game'; $('result').hidden = w !== 'result'; $('hist').hidden = w !== 'hist'; }
+
+const arena = $('arena'), hint = $('hint');
+let G = null;
+
+function start(){
+  const m = S.mode;
+  G = {mode: m, d: S.size, total: S.count, left: S.count, dur: S.secs * 1000, lives: 3, life: 1500,
+       hits: 0, miss: 0, score: 0, combo: 0, maxCombo: 0, t0: 0, running: false, done: false,
+       x: 0, y: 0, vx: 0, vy: 0, el: null, spawnAt: 0, last: performance.now()};
+  arena.querySelectorAll('.target,.ring,.pop').forEach(e => e.remove());
+  hint.hidden = false;
+  show('game');
+  keepAwake();
+  spawn(); hud(performance.now());
+  requestAnimationFrame(tick);
+}
+
+function spawn(){
+  const w = arena.clientWidth, h = arena.clientHeight, m = G.d / 2 + 28;
+  let x, y, t = 0;
+  do {
+    x = m + Math.random() * Math.max(1, w - 2 * m);
+    y = m + Math.random() * Math.max(1, h - 2 * m);
+    t++;
+  } while(G.el && t < 30 && Math.hypot(x - G.x, y - G.y) < G.d * 1.5);
+  G.x = x; G.y = y;
+  if(S.moving){ const a = Math.random() * 6.283, v = 0.12 + Math.random() * 0.14; G.vx = Math.cos(a) * v; G.vy = Math.sin(a) * v; }
+  if(!G.el){ G.el = document.createElement('div'); G.el.className = 'target'; arena.appendChild(G.el); }
+  G.el.style.width = G.el.style.height = G.d + 'px';
+  G.el.style.opacity = 1;
+  place();
+  G.spawnAt = performance.now();
+}
+function place(){ G.el.style.left = G.x + 'px'; G.el.style.top = G.y + 'px'; }
+
+function hud(now){
+  let a;
+  if(G.mode === 'classic') a = 'ကျန် <b>' + G.left + '</b> · ' + (G.running ? fmt(now - G.t0) : '0.00 s');
+  else if(G.mode === 'timed') a = 'ကျန် <b>' + Math.max(0, Math.ceil((G.dur - (G.running ? now - G.t0 : 0)) / 1000)) + ' s</b>';
+  else a = '<b>' + '♥'.repeat(G.lives) + '</b>';
+  $('h1').innerHTML = a;
+  $('h2').innerHTML = 'Score <b>' + G.score + '</b> ×' + mult();
+  $('h3').innerHTML = 'မှား <b>' + G.miss + '</b>';
+}
+const mult = () => Math.min(5, 1 + Math.floor(G.combo / 5) * 0.5);
+
+function tick(now){
+  if(!G || G.done) return;
+  const dt = Math.min(50, now - G.last); G.last = now;
+  if(G.running){
+    if(S.moving){
+      const w = arena.clientWidth, h = arena.clientHeight, r = G.d / 2;
+      G.x += G.vx * dt; G.y += G.vy * dt;
+      if(G.x < r || G.x > w - r){ G.vx = -G.vx; G.x = Math.min(w - r, Math.max(r, G.x)); }
+      if(G.y < r || G.y > h - r){ G.vy = -G.vy; G.y = Math.min(h - r, Math.max(r, G.y)); }
+      place();
+    }
+    if(G.mode === 'timed' && now - G.t0 >= G.dur){ finish(G.t0 + G.dur); return; }
+    if(G.mode === 'survival'){
+      const age = now - G.spawnAt;
+      G.el.style.opacity = Math.max(0.3, 1 - age / G.life * 0.7);
+      if(age > G.life){ loseLife(now); if(G.done) return; spawn(); }
+    }
+  }
+  hud(now);
+  requestAnimationFrame(tick);
+}
+
+function loseLife(now){
+  G.combo = 0; G.lives--; beep(160, 0.2); buzz(60);
+  if(G.lives <= 0) finish(now);
+}
+
+function fx(x, y, txt){
+  const r = document.createElement('div'); r.className = 'ring'; r.style.left = x + 'px'; r.style.top = y + 'px';
+  r.onanimationend = () => r.remove(); arena.appendChild(r);
+  const p = document.createElement('div'); p.className = 'pop'; p.textContent = txt; p.style.left = x + 'px'; p.style.top = y + 'px';
+  p.onanimationend = () => p.remove(); arena.appendChild(p);
+}
+
+arena.addEventListener('pointerdown', e => {
+  if(!G || G.done) return;
+  e.preventDefault();
+  const now = performance.now(), r = arena.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const hit = Math.hypot(px - G.x, py - G.y) <= G.d / 2;
+  if(!hit){
+    if(!G.running) return;
+    G.miss++; G.combo = 0; beep(180, 0.12); buzz(40);
+    if(G.mode === 'survival') loseLife(now);
+    hud(now); return;
+  }
+  const first = !G.running;
+  if(first){ G.running = true; G.t0 = now; hint.hidden = true; }
+  G.hits++; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
+  const bonus = first ? 0 : Math.max(0, 500 - (now - G.spawnAt)) / 10;
+  const pts = Math.round((100 + bonus) * mult());
+  G.score += pts;
+  fx(G.x, G.y, '+' + pts);
+  beep(500 + Math.min(G.combo, 20) * 30, 0.08); buzz(12);
+  if(G.mode === 'classic'){ G.left--; if(G.left <= 0){ finish(now); return; } }
+  if(G.mode === 'survival') G.life = Math.max(450, G.life * 0.97);
+  spawn(); hud(now);
+});
+
+function finish(now){
+  G.done = true; G.el.style.opacity = 0;
+  const el = now - G.t0, acc = G.hits / Math.max(1, G.hits + G.miss) * 100;
+  let stats, val, low = false, unit = '';
+  if(G.mode === 'classic'){
+    val = el / (G.total - 1); low = true; unit = ' ms';
+    stats = [[fmt(el), 'စုစုပေါင်းအချိန်'], [Math.round(val) + ' ms', 'ပျမ်းမျှ / target'], [G.score, 'Score'], [acc.toFixed(1) + '%', 'တိကျမှု']];
+  } else {
+    val = G.score;
+    stats = [[G.score, 'Score'], [G.hits, 'ထိမှန်မှု'], ['×' + G.maxCombo, 'အများဆုံး combo'], [acc.toFixed(1) + '%', 'တိကျမှု']];
+  }
+  $('rSub').textContent = MODES.find(m => m[0] === G.mode)[1] + (S.moving ? ' · ရွှေ့နေတဲ့ target' : '') + ' · ' + G.d + ' px';
+  $('rStats').innerHTML = stats.map(s => '<div class="stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>').join('');
+  const key = 'aim2b-' + G.mode + '-' + (G.mode === 'classic' ? G.total : G.mode === 'timed' ? S.secs : 0) + '-' + G.d + '-' + (S.moving ? 1 : 0);
+  let prev = NaN;
+  try{ prev = parseFloat(localStorage.getItem(key)); }catch(e){}
+  const better = isNaN(prev) || (low ? val < prev : val > prev);
+  const show1 = v => Math.round(low ? v : v) + (low ? ' ms' : '');
+  if(better){
+    try{ localStorage.setItem(key, String(val)); }catch(e){}
+    $('rBest').textContent = isNaN(prev) ? '🏆 ဒီ setting အတွက် ပထမဆုံး စံချိန်' : '🏆 စံချိန်သစ်! (အရင် ' + show1(prev) + ')';
+  } else $('rBest').textContent = 'အကောင်းဆုံး: ' + show1(prev);
+  const run = {t: Date.now(), m: G.mode, k: key, v: val, s: G.score, n: G.mode === 'classic' ? G.total + ' target' : G.mode === 'timed' ? S.secs + ' s' : 'survival', d: G.d, g: S.moving};
+  const hs = hLoad(); hs.push(run); hSave(hs);
+  const same = hs.filter(r => r.k === key).slice(-20);
+  $('rChart').innerHTML = '<p class="sub" style="margin:12px 0 4px">ဒီ setting ရဲ့ နောက်ဆုံး ' + same.length + ' ကြိမ်</p>' + chart(same);
+  beep(700, 0.25);
+  show('result');
+}
+
+$('startBtn').onclick = start;
+$('again').onclick = start;
+$('toMenu').onclick = () => show('menu');
+
+function hLoad(){ try{ return JSON.parse(localStorage.getItem('aim2h') || '[]'); }catch(e){ return []; } }
+function hSave(a){ try{ localStorage.setItem('aim2h', JSON.stringify(a.slice(-200))); }catch(e){} }
+function chart(runs){
+  if(runs.length < 2) return '<p class="sub">Chart ပြဖို့ အနည်းဆုံး ၂ ကြိမ် ကစားပါ။</p>';
+  const W = 320, H = 110, p = 8, vs = runs.map(r => r.v), mn = Math.min(...vs), mx = Math.max(...vs), sp = (mx - mn) || 1;
+  const pts = runs.map((r, i) => [p + i * (W - 2 * p) / (runs.length - 1), H - p - (r.v - mn) / sp * (H - 2 * p)]);
+  const line = pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ');
+  const dots = pts.map(q => '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3" fill="var(--accent)"/>').join('');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;overflow:visible"><polyline points="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2"/>' + dots + '</svg><div class="rng"><span>နိမ့်ဆုံး ' + Math.round(mn) + '</span><span>အမြင့်ဆုံး ' + Math.round(mx) + '</span></div>';
+}
+let hm = 'classic', clr = 0;
+function renderHist(){
+  const all = hLoad().filter(r => r.m === hm), low = hm === 'classic';
+  $('hModes').innerHTML = MODES.map(m => '<button class="chip' + (m[0] === hm ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>').join('');
+  $('hModes').querySelectorAll('.chip').forEach(b => b.onclick = () => { hm = b.dataset.m; renderHist(); });
+  $('hNote').textContent = (low ? 'Target တစ်ခု ပျမ်းမျှ ms (နိမ့်လေ ကောင်းလေ)' : 'Score (မြင့်လေ ကောင်းလေ)') + ' · စုစုပေါင်း ' + all.length + ' ကြိမ်';
+  $('hChart').innerHTML = chart(all.slice(-30));
+  $('hList').innerHTML = all.slice(-10).reverse().map(r => {
+    const d = new Date(r.t), ds = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    return '<div class="hr"><span>' + ds + '</span><span>' + r.n + ' · ' + r.d + 'px' + (r.g ? ' · ရွှေ့' : '') + '</span><b>' + (low ? Math.round(r.v) + ' ms' : r.s) + '</b></div>';
+  }).join('') || '<p class="sub">မကစားရသေးပါ။</p>';
+}
+$('histBtn').onclick = () => { renderHist(); show('hist'); };
+$('hBack').onclick = () => show('menu');
+$('hClear').onclick = function(){
+  if(!clr){ clr = 1; this.textContent = 'သေချာရင် ထပ်နှိပ်ပါ'; return; }
+  clr = 0; this.textContent = 'History ဖျက်မယ်'; hSave([]); renderHist();
+};
+function toMenu(){ if(G) G.done = true; show('menu'); }
+$('quit').onclick = toMenu;
+
+// ---- App (APK) hooks ----
+document.addEventListener('contextmenu', e => { if(e.target.tagName !== 'INPUT') e.preventDefault(); });
+let wl = null;
+async function keepAwake(){ try{ if(navigator.wakeLock) wl = await navigator.wakeLock.request('screen'); }catch(e){} }
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){ if(G && !G.done && !$('game').hidden) toMenu(); }
+  else if(!$('game').hidden) keepAwake();
+});
+(function(){
+  const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+  try{ if(P.StatusBar) P.StatusBar.hide(); }catch(e){}
+  try{
+    if(P.App) P.App.addListener('backButton', () => {
+      if(!$('menu').hidden){ P.App.exitApp(); }
+      else if(!$('game').hidden){ toMenu(); }
+      else show('menu');
+    });
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
